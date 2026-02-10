@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Rural Health Triage</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid;
+        }
+
+        .stat-card.red {
+            border-left-color: #f44336;
+        }
+
+        .stat-card.yellow {
+            border-left-color: #ffc107;
+        }
+
+        .stat-card.green {
+            border-left-color: #4caf50;
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card.red .stat-number {
+            color: #f44336;
+        }
+
+        .stat-card.yellow .stat-number {
+            color: #ffc107;
+        }
+
+        .stat-card.green .stat-number {
+            color: #4caf50;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .section h2 {
+            margin-bottom: 20px;
+            color: #333;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .case-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .case-item {
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid;
+            background: #fafafa;
+            transition: all 0.3s ease;
+        }
+
+        .case-item:hover {
+            background: #f0f0f0;
+            transform: translateX(5px);
+        }
+
+        .case-item.red {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+
+        .case-item.yellow {
+            border-left-color: #ffc107;
+            background: #fff9e6;
+        }
+
+        .case-item.green {
+            border-left-color: #4caf50;
+            background: #e8f5e9;
+        }
+
+        .case-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .case-id {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .case-time {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .case-severity {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .case-severity.red {
+            background: #f44336;
+            color: white;
+        }
+
+        .case-severity.yellow {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .case-severity.green {
+            background: #4caf50;
+            color: white;
+        }
+
+        .case-details {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .medicine-usage {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .medicine-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .medicine-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .medicine-count {
+            font-size: 24px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Admin Dashboard</h1>
+        <p>Rural Health Triage System - Real-time Monitoring</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card red">
+            <h3>Emergency Cases</h3>
+            <div class="stat-number" id="redCount">12</div>
+            <div class="stat-label">Last 24 hours</div>
+        </div>
+        <div class="stat-card yellow">
+            <h3>Doctor Reviews</h3>
+            <div class="stat-number" id="yellowCount">28</div>
+            <div class="stat-label">Pending + Completed</div>
+        </div>
+        <div class="stat-card green">
+            <h3>Local Treatments</h3>
+            <div class="stat-number" id="greenCount">145</div>
+            <div class="stat-label">Successfully managed</div>
+        </div>
+        <div class="stat-card">
+            <h3>Total Cases</h3>
+            <div class="stat-number" style="color: #667eea;" id="totalCount">185</div>
+            <div class="stat-label">This week</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📋 Recent Cases</h2>
+        <div class="filter-buttons">
+            <button class="filter-btn active" onclick="filterCases('all')">All Cases</button>
+            <button class="filter-btn" onclick="filterCases('red')">🔴 Emergency</button>
+            <button class="filter-btn" onclick="filterCases('yellow')">🟡 Doctor Review</button>
+            <button class="filter-btn" onclick="filterCases('green')">🟢 Local Care</button>
+        </div>
+        <div class="case-list" id="caseList">
+            <!-- Cases will be populated here -->
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>💊 Medicine Usage (Last 7 Days)</h2>
+        <div class="medicine-usage">
+            <div class="medicine-card">
+                <div class="medicine-name">Paracetamol</div>
+                <div class="medicine-count">89</div>
+                <div style="font-size: 12px; color: #666;">doses dispensed</div>
+            </div>
+            <div class="medicine-card">
+                <div class="medicine-name">ORS</div>
+                <div class="medicine-count">34</div>
+                <div style="font-size: 12px; color: #666;">packets given</div>
+            </div>
+            <div class="medicine-card">
+                <div class="medicine-name">Cetirizine</div>
+                <div class="medicine-count">27</div>
+                <div style="font-size: 12px; color: #666;">doses dispensed</div>
+            </div>
+            <div class="medicine-card">
+                <div class="medicine-name">Cough Syrup</div>
+                <div class="medicine-count">45</div>
+                <div style="font-size: 12px; color: #666;">bottles issued</div>
+            </div>
+            <div class="medicine-card">
+                <div class="medicine-name">Antacid Syrup</div>
+                <div class="medicine-count">18</div>
+                <div style="font-size: 12px; color: #666;">doses dispensed</div>
+            </div>
+            <div class="medicine-card">
+                <div class="medicine-name">Antiseptic Cream</div>
+                <div class="medicine-count">12</div>
+                <div style="font-size: 12px; color: #666;">applications</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock data for demonstration
+        const mockCases = [
+            {
+                id: 'CASE-001',
+                category: 'red',
+                symptoms: 'Severe chest pain, difficulty breathing',
+                time: '2 hours ago',
+                action: 'Ambulance dispatched, hospital notified'
+            },
+            {
+                id: 'CASE-002',
+                category: 'yellow',
+                symptoms: 'Persistent stomach pain for 3 days, mild fever',
+                time: '4 hours ago',
+                action: 'Doctor review in progress (35 mins remaining)'
+            },
+            {
+                id: 'CASE-003',
+                category: 'green',
+                symptoms: 'Mild fever (99°F), cough, body ache',
+                time: '5 hours ago',
+                action: 'Paracetamol and Cough Syrup dispensed, follow-up in 3 days'
+            },
+            {
+                id: 'CASE-004',
+                category: 'green',
+                symptoms: 'Minor cut on hand, needs dressing',
+                time: '6 hours ago',
+                action: 'Antiseptic cream applied, wound dressed'
+            },
+            {
+                id: 'CASE-005',
+                category: 'yellow',
+                symptoms: 'Headache with vision changes',
+                time: '7 hours ago',
+                action: 'Doctor reviewed - referred to eye specialist'
+            },
+            {
+                id: 'CASE-006',
+                category: 'green',
+                symptoms: 'Diarrhea, dehydration symptoms',
+                time: '8 hours ago',
+                action: 'ORS provided, monitoring hydration'
+            },
+            {
+                id: 'CASE-007',
+                category: 'red',
+                symptoms: 'Unconscious patient, suspected stroke',
+                time: '12 hours ago',
+                action: 'Emergency transfer completed, patient stable'
+            },
+            {
+                id: 'CASE-008',
+                category: 'green',
+                symptoms: 'Allergic rash, mild itching',
+                time: '1 day ago',
+                action: 'Cetirizine prescribed, symptoms improving'
+            }
+        ];
+
+        let currentFilter = 'all';
+
+        // Render cases
+        function renderCases() {
+            const caseList = document.getElementById('caseList');
+            const filteredCases = currentFilter === 'all' 
+                ? mockCases 
+                : mockCases.filter(c => c.category === currentFilter);
+
+            if (filteredCases.length === 0) {
+                caseList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div>No cases found in this category</div>
+                    </div>
+                `;
+                return;
+            }
+
+            caseList.innerHTML = filteredCases.map(caseItem => `
+                <div class="case-item ${caseItem.category}">
+                    <div class="case-header">
+                        <div>
+                            <span class="case-id">${caseItem.id}</span>
+                            <span class="case-severity ${caseItem.category}">
+                                ${caseItem.category === 'red' ? 'EMERGENCY' : 
+                                  caseItem.category === 'yellow' ? 'REVIEW' : 'LOCAL CARE'}
+                            </span>
+                        </div>
+                        <div class="case-time">${caseItem.time}</div>
+                    </div>
+                    <div class="case-details">
+                        <strong>Symptoms:</strong> ${caseItem.symptoms}<br>
+                        <strong>Action:</strong> ${caseItem.action}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter cases
+        function filterCases(category) {
+            currentFilter = category;
+            
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderCases();
+        }
+
+        // Initialize
+        renderCases();
+
+        // Auto-refresh every 30 seconds (in real app, would fetch from API)
+        setInterval(() => {
+            // In production, this would fetch real data from server
+            console.log('Auto-refreshing dashboard data...');
+        }, 30000);
+    </script>
+</body>
+</html>

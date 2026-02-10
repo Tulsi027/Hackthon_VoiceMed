@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rural Health Triage System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .disclaimer {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .disclaimer strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #856404;
+        }
+
+        .voice-section {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .voice-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 48px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .voice-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.6);
+        }
+
+        .voice-button:active {
+            transform: scale(0.95);
+        }
+
+        .voice-button.recording {
+            background: #dc3545;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .status-text {
+            margin-top: 15px;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .transcript-box {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            min-height: 100px;
+            display: none;
+        }
+
+        .transcript-box.visible {
+            display: block;
+        }
+
+        .transcript-box h3 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .conversation-thread {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .message.user {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+
+        .message.ai {
+            background: #f3e5f5;
+            border-left: 4px solid #9c27b0;
+        }
+
+        .message-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .message.user .message-label {
+            color: #1976d2;
+        }
+
+        .message.ai .message-label {
+            color: #7b1fa2;
+        }
+
+        .triage-result {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .triage-result.visible {
+            display: block;
+        }
+
+        .triage-result.red {
+            background: #ffebee;
+            border: 3px solid #f44336;
+        }
+
+        .triage-result.yellow {
+            background: #fff9e6;
+            border: 3px solid #ffc107;
+        }
+
+        .triage-result.green {
+            background: #e8f5e9;
+            border: 3px solid #4caf50;
+        }
+
+        .triage-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .triage-icon {
+            font-size: 48px;
+            margin-right: 15px;
+        }
+
+        .triage-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .triage-result.red .triage-title {
+            color: #c62828;
+        }
+
+        .triage-result.yellow .triage-title {
+            color: #f57f17;
+        }
+
+        .triage-result.green .triage-title {
+            color: #2e7d32;
+        }
+
+        .triage-body {
+            margin-top: 15px;
+        }
+
+        .triage-section {
+            margin: 15px 0;
+        }
+
+        .triage-section h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .action-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn.emergency {
+            background: #f44336;
+            color: white;
+        }
+
+        .action-btn.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .medicine-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .medicine-item {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+        }
+
+        .medicine-item strong {
+            display: block;
+            color: #2e7d32;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .loading.visible {
+            display: block;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .new-consultation-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .new-consultation-btn:hover {
+            background: #5568d3;
+        }
+
+        .doctor-review-status {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            color: #f57f17;
+            margin: 10px 0;
+        }
+
+        .transport-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .transport-modal.visible {
+            display: flex;
+        }
+
+        .transport-modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .transport-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .transport-modal-header h3 {
+            color: #f44336;
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-modal:hover {
+            color: #333;
+        }
+
+        .volunteer-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .volunteer-card {
+            background: #f8f9fa;
+            border-left: 4px solid #4caf50;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .volunteer-card:hover {
+            background: #e8f5e9;
+            transform: translateX(5px);
+        }
+
+        .volunteer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .volunteer-name {
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .volunteer-status {
+            background: #4caf50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .volunteer-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .volunteer-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .volunteer-compensation {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #ffc107;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .volunteer-compensation strong {
+            color: #f57f17;
+        }
+
+        .request-sent-badge {
+            display: inline-block;
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 VoiceMed - Your AI Assistant</h1>
+            <p>Voice-Based Healthcare Decision Support for Village Health Points</p>
+        </div>
+
+        <div class="main-content">
+            <div class="disclaimer">
+                <strong>⚠️ Important Notice</strong>
+                This is a decision support tool only. It does not provide medical diagnosis. Always follow local health protocols and escalate emergencies immediately.
+            </div>
+
+            <div class="voice-section">
+                <button id="voiceBtn" class="voice-button">🎤</button>
+                <div id="statusText" class="status-text">Click microphone to start voice consultation</div>
+            </div>
+
+            <div id="transcriptBox" class="transcript-box">
+                <h3>📝 Consultation Thread</h3>
+                <div id="conversationThread" class="conversation-thread"></div>
+            </div>
+
+            <div id="loading" class="loading">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 15px;">AI is analyzing and preparing questions...</p>
+            </div>
+
+            <div id="triageResult" class="triage-result"></div>
+
+            <button id="newConsultationBtn" class="new-consultation-btn" style="display: none;">
+                🔄 Start New Consultation
+            </button>
+        </div>
+    </div>
+
+    <!-- Transport Volunteer Modal -->
+    <div id="transportModal" class="transport-modal">
+        <div class="transport-modal-content">
+            <div class="transport-modal-header">
+                <h3>🚗 Emergency Transport Requests Sent</h3>
+                <button class="close-modal" onclick="closeTransportModal()">×</button>
+            </div>
+            <div id="volunteerList" class="volunteer-list">
+                <!-- Volunteers will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let isRecording = false;
+        let recognition = null;
+        let conversationHistory = [];
+        let sessionId = null;
+
+        // DOM Elements
+        const voiceBtn = document.getElementById('voiceBtn');
+        const statusText = document.getElementById('statusText');
+        const transcriptBox = document.getElementById('transcriptBox');
+        const conversationThread = document.getElementById('conversationThread');
+        const loading = document.getElementById('loading');
+        const triageResult = document.getElementById('triageResult');
+        const newConsultationBtn = document.getElementById('newConsultationBtn');
+
+        // Initialize Speech Recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-IN'; // Indian English, can be changed to hi-IN for Hindi
+
+            recognition.onstart = () => {
+                isRecording = true;
+                voiceBtn.classList.add('recording');
+                statusText.textContent = '🎙️ Listening... Speak now';
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                handleVoiceInput(transcript);
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                statusText.textContent = 'Error: ' + event.error + '. Click to try again.';
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+                if (triageResult.classList.contains('visible')) {
+                    statusText.textContent = 'Consultation complete';
+                } else {
+                    statusText.textContent = 'Click microphone to speak';
+                }
+            };
+        } else {
+            statusText.textContent = '❌ Voice input not supported in this browser';
+            voiceBtn.disabled = true;
+        }
+
+        // Voice Button Click Handler
+        voiceBtn.addEventListener('click', () => {
+            if (!recognition) return;
+
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                // Start new session if needed
+                if (!sessionId) {
+                    sessionId = 'session_' + Date.now();
+                    conversationHistory = [];
+                    transcriptBox.classList.add('visible');
+                }
+                recognition.start();
+            }
+        });
+
+        // Handle Voice Input
+        async function handleVoiceInput(transcript) {
+            // Add user message to thread
+            addMessageToThread('user', transcript);
+            
+            // Show loading
+            loading.classList.add('visible');
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/triage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionId: sessionId,
+                        userInput: transcript,
+                        conversationHistory: conversationHistory
+                    })
+                });
+
+                const data = await response.json();
+                loading.classList.remove('visible');
+
+                if (data.needsMoreInfo) {
+                    // AI needs to ask follow-up question
+                    addMessageToThread('ai', data.question);
+                    speakText(data.question);
+                    conversationHistory.push({
+                        role: 'user',
+                        content: transcript
+                    });
+                    conversationHistory.push({
+                        role: 'assistant',
+                        content: data.question
+                    });
+                } else {
+                    // Triage decision made
+                    displayTriageResult(data);
+                }
+            } catch (error) {
+                loading.classList.remove('visible');
+                console.error('Error:', error);
+                statusText.textContent = 'Error connecting to server. Please try again.';
+            }
+        }
+
+        // Add Message to Conversation Thread
+        function addMessageToThread(role, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = role === 'user' ? 'Mukhiya' : 'AI Assistant';
+            
+            const text = document.createElement('div');
+            text.textContent = content;
+            
+            messageDiv.appendChild(label);
+            messageDiv.appendChild(text);
+            conversationThread.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            conversationThread.scrollTop = conversationThread.scrollHeight;
+        }
+
+        // Display Triage Result
+        function displayTriageResult(data) {
+            const { category, reasoning, actions, medicines, doctorReview } = data;
+            
+            triageResult.className = 'triage-result visible ' + category.toLowerCase();
+            
+            let iconEmoji = '🔴';
+            let categoryName = 'EMERGENCY';
+            
+            if (category === 'YELLOW') {
+                iconEmoji = '🟡';
+                categoryName = 'DOCTOR REVIEW REQUIRED';
+            } else if (category === 'GREEN') {
+                iconEmoji = '🟢';
+                categoryName = 'LOCAL / BASIC CARE';
+            }
+            
+            let html = `
+                <div class="triage-header">
+                    <div class="triage-icon">${iconEmoji}</div>
+                    <div class="triage-title">${categoryName}</div>
+                </div>
+                <div class="triage-body">
+                    <div class="triage-section">
+                        <h4>Clinical Assessment:</h4>
+                        <p>${reasoning}</p>
+                    </div>
+            `;
+            
+            if (category === 'RED') {
+                html += `
+                    <div class="triage-section">
+                        <h4>⚠️ IMMEDIATE ACTIONS REQUIRED:</h4>
+                        <div class="action-buttons">
+                            <button class="action-btn emergency" onclick="call108()">📞 Call 108 Ambulance</button>
+                            <button class="action-btn emergency" onclick="notifyHospital()">🏥 Alert Nearest Hospital</button>
+                            <button class="action-btn emergency" onclick="arrangeTransport()">🚗 Arrange Transport</button>
+                        </div>
+                    </div>
+                `;
+            } else if (category === 'YELLOW') {
+                html += `
+                    <div class="triage-section">
+                        <h4>📋 Doctor Review Status:</h4>
+                        <div class="doctor-review-status">
+                            <p>Medical report has been sent to the doctor for review.</p>
+                            <p><strong>Expected response time:</strong></p>
+                            <div class="timer" id="reviewTimer">50:00</div>
+                            <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                                <em>(Simulated for demo - actual time may vary)</em>
+                            </p>
+                        </div>
+                    </div>
+                `;
+                // Start countdown timer
+                startDoctorReviewTimer();
+            } else if (category === 'GREEN') {
+                if (medicines && medicines.length > 0) {
+                    html += `
+                        <div class="triage-section">
+                            <h4>💊 Recommended Medicines from Village Box:</h4>
+                            <ul class="medicine-list">
+                    `;
+                    medicines.forEach(med => {
+                        html += `
+                            <li class="medicine-item">
+                                <strong>${med.name}</strong>
+                                <span>${med.dosage}</span>
+                                ${med.instructions ? `<div style="font-size: 12px; color: #666; margin-top: 5px;">${med.instructions}</div>` : ''}
+                            </li>
+                        `;
+                    });
+                    html += `
+                            </ul>
+                        </div>
+                        <div class="triage-section">
+                            <p style="background: #e3f2fd; padding: 10px; border-radius: 5px;">
+                                ✅ <strong>Follow-up reminder set for 3 days</strong>
+                            </p>
+                        </div>
+                    `;
+                }
+            }
+            
+            html += `</div>`;
+            triageResult.innerHTML = html;
+            
+            // Show new consultation button
+            newConsultationBtn.style.display = 'block';
+            
+            // Speak the result
+            const speechText = `${categoryName}. ${reasoning}`;
+            speakText(speechText);
+            
+            // Hide voice button
+            voiceBtn.style.display = 'none';
+            statusText.textContent = 'Consultation complete';
+        }
+
+        // Text-to-Speech
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-IN';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Doctor Review Timer (Simulation)
+        function startDoctorReviewTimer() {
+            let minutes = 50;
+            let seconds = 0;
+            
+            // For demo, use shorter time (5 minutes)
+            minutes = 5;
+            
+            const timerElement = document.getElementById('reviewTimer');
+            
+            const countdown = setInterval(() => {
+                if (seconds === 0) {
+                    if (minutes === 0) {
+                        clearInterval(countdown);
+                        showDoctorApproval();
+                        return;
+                    }
+                    minutes--;
+                    seconds = 59;
+                } else {
+                    seconds--;
+                }
+                
+                timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // Show Doctor Approval (Simulation)
+        function showDoctorApproval() {
+            const reviewStatus = document.querySelector('.doctor-review-status');
+            if (reviewStatus) {
+                reviewStatus.innerHTML = `
+                    <p style="color: #2e7d32; font-weight: bold;">✅ Doctor has reviewed and approved the treatment plan</p>
+                    <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                        <h4 style="margin-bottom: 10px;">Doctor's Instructions:</h4>
+                        <ul style="list-style-position: inside; color: #333;">
+                            <li>Continue monitoring patient's condition</li>
+                            <li>Follow prescribed medication schedule</li>
+                            <li>Return immediately if symptoms worsen</li>
+                            <li>Follow-up consultation in 3 days</li>
+                        </ul>
+                    </div>
+                `;
+                speakText('Doctor has reviewed and approved the treatment plan. Please check the instructions.');
+            }
+        }
+
+        // Action Button Handlers
+        function call108() {
+            alert('📞 Calling 108 Ambulance Service...\n\n(In production, this would initiate an actual call)');
+            speakText('Calling 108 ambulance service');
+        }
+
+        function notifyHospital() {
+            alert('🏥 Sending emergency alert to nearest hospital...\n\n(In production, this would send SMS/notification to hospital)');
+            speakText('Hospital has been notified');
+        }
+
+        async function arrangeTransport() {
+            try {
+                // Show loading
+                statusText.textContent = 'Contacting transport volunteers...';
+                
+                // Send transport request
+                const response = await fetch('http://localhost:3000/api/request-transport', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        emergencyDetails: {
+                            timestamp: new Date().toISOString(),
+                            urgency: 'HIGH'
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayTransportVolunteers(data.notifications);
+                    speakText(`Emergency transport requests sent to ${data.totalVolunteers} volunteers`);
+                }
+            } catch (error) {
+                console.error('Error requesting transport:', error);
+                alert('Error contacting transport volunteers. Please try again.');
+            }
+        }
+
+        function displayTransportVolunteers(volunteers) {
+            const volunteerList = document.getElementById('volunteerList');
+            const modal = document.getElementById('transportModal');
+            
+            volunteerList.innerHTML = `
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ffc107;">
+                    <strong>✅ Emergency alerts sent successfully!</strong>
+                    <p style="margin: 5px 0 0 0; font-size: 14px;">All ${volunteers.length} transport volunteers have been notified and will respond shortly.</p>
+                </div>
+                ${volunteers.map(volunteer => `
+                    <div class="volunteer-card">
+                        <div class="volunteer-header">
+                            <div class="volunteer-name">👤 ${volunteer.name}</div>
+                            <span class="volunteer-status">✓ Alert Sent</span>
+                        </div>
+                        <div class="volunteer-details">
+                            <div class="volunteer-info">📞 ${volunteer.phone}</div>
+                            <div class="volunteer-info">🏍️ ${volunteer.vehicle}</div>
+                            <div class="volunteer-info">📍 ${volunteer.distance}</div>
+                            <div class="volunteer-info">💰 ${volunteer.compensation}</div>
+                        </div>
+                        <div class="volunteer-compensation">
+                            <strong>Message Sent:</strong><br>
+                            "${volunteer.message.replace(/\n/g, '<br>')}"
+                        </div>
+                        <div class="request-sent-badge">
+                            ✓ Request sent at ${new Date(volunteer.timestamp).toLocaleTimeString()}
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+            
+            modal.classList.add('visible');
+        }
+
+        function closeTransportModal() {
+            const modal = document.getElementById('transportModal');
+            modal.classList.remove('visible');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('transportModal').addEventListener('click', (e) => {
+            if (e.target.id === 'transportModal') {
+                closeTransportModal();
+            }
+        });
+
+        // New Consultation
+        newConsultationBtn.addEventListener('click', () => {
+            // Reset everything
+            sessionId = null;
+            conversationHistory = [];
+            conversationThread.innerHTML = '';
+            transcriptBox.classList.remove('visible');
+            triageResult.classList.remove('visible');
+            triageResult.innerHTML = '';
+            newConsultationBtn.style.display = 'none';
+            voiceBtn.style.display = 'block';
+            statusText.textContent = 'Click microphone to start voice consultation';
+        });
+    </script>
+</body>
+</html>
