@@ -527,6 +527,19 @@
         </div>
     </div>
 
+    <!-- Hospital Modal -->
+    <div id="hospitalModal" class="transport-modal">
+        <div class="transport-modal-content">
+            <div class="transport-modal-header">
+                <h3>👨‍⚕️ Doctor Appointment Booked</h3>
+                <button class="close-modal" onclick="closeHospitalModal()">×</button>
+            </div>
+            <div id="hospitalList" class="volunteer-list">
+                <!-- Doctor appointment details will be populated here -->
+            </div>
+        </div>
+    </div>
+
     <script>
         // State Management
         let isRecording = false;
@@ -671,6 +684,9 @@
         function displayTriageResult(data) {
             const { category, reasoning, actions, medicines, doctorReview } = data;
             
+            // Store triage result for later use (e.g., booking specialist)
+            window.currentTriageResult = data;
+            
             triageResult.className = 'triage-result visible ' + category.toLowerCase();
             
             let iconEmoji = '🔴';
@@ -702,7 +718,7 @@
                         <h4>⚠️ IMMEDIATE ACTIONS REQUIRED:</h4>
                         <div class="action-buttons">
                             <button class="action-btn emergency" onclick="call108()">📞 Call 108 Ambulance</button>
-                            <button class="action-btn emergency" onclick="notifyHospital()">🏥 Alert Nearest Hospital</button>
+                            <button class="action-btn emergency" onclick="bookSpecialist()">👨‍⚕️ Book Specialist Doctor</button>
                             <button class="action-btn emergency" onclick="arrangeTransport()">🚗 Arrange Transport</button>
                         </div>
                     </div>
@@ -718,6 +734,13 @@
                             <p style="font-size: 12px; color: #666; margin-top: 10px;">
                                 <em>(Simulated for demo - actual time may vary)</em>
                             </p>
+                        </div>
+                    </div>
+                    <div class="triage-section">
+                        <h4>👨‍⚕️ Need to consult a doctor immediately?</h4>
+                        <p style="margin-bottom: 15px;">If you need urgent consultation, you can book an appointment with a specialist doctor at the hospital.</p>
+                        <div class="action-buttons">
+                            <button class="action-btn" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);" onclick="requestDoctorConsultation()">📞 Request Doctor Consultation</button>
                         </div>
                     </div>
                 `;
@@ -829,10 +852,138 @@
             speakText('Calling 108 ambulance service');
         }
 
-        function notifyHospital() {
-            alert('🏥 Sending emergency alert to nearest hospital...\n\n(In production, this would send SMS/notification to hospital)');
-            speakText('Hospital has been notified');
+        function bookSpecialist() {
+            // Book a specialist doctor based on the patient's condition
+            if (!window.currentTriageResult) {
+                alert('Please complete the triage assessment first');
+                return;
+            }
+            
+            fetchSpecialistAppointment();
         }
+
+        function requestDoctorConsultation() {
+            // For YELLOW cases - patient requests to talk to a doctor
+            if (!window.currentTriageResult) {
+                alert('Please complete the triage assessment first');
+                return;
+            }
+            
+            // Show confirmation and proceed with booking
+            speakText('Connecting you with the hospital to book a doctor appointment');
+            statusText.textContent = 'Booking doctor appointment...';
+            
+            // Use the same specialist booking function
+            fetchSpecialistAppointment();
+        }
+
+        async function fetchSpecialistAppointment() {
+            try {
+                statusText.textContent = 'Booking specialist doctor...';
+                
+                const response = await fetch('http://localhost:3000/api/book-specialist', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        symptoms: conversationHistory.map(msg => msg.content).join(' '),
+                        reasoning: window.currentTriageResult?.reasoning || ''
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayDoctorAppointment(data);
+                    speakText(`Appointment confirmed with ${data.doctor.specialty}`);
+                } else {
+                    console.error('Booking API error:', data);
+                    alert(`Could not book specialist: ${data.message || 'Unknown error'}\n\nPlease call hospital directly.`);
+                    statusText.textContent = 'Error booking specialist';
+                }
+            } catch (error) {
+                console.error('Error booking specialist:', error);
+                alert(`Error connecting to booking service: ${error.message}\n\nThis may be due to:\n- Server not running\n- Network connection issue\n- Browser blocking the request\n\nPlease call hospital directly.`);
+                statusText.textContent = 'Error booking specialist';
+            }
+        }
+
+        function displayDoctorAppointment(data) {
+            const hospitalList = document.getElementById('hospitalList');
+            const modal = document.getElementById('hospitalModal');
+            
+            hospitalList.innerHTML = `
+                <!-- Hospital Information -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 10px 0;">🏥 ${data.hospital.name}</h3>
+                    <p style="margin: 5px 0; font-size: 14px;">📍 ${data.hospital.address}</p>
+                    <p style="margin: 5px 0; font-size: 14px;">📞 ${data.hospital.phone}</p>
+                    <p style="margin: 5px 0; font-size: 14px;">🚨 Emergency: ${data.hospital.emergency}</p>
+                    <p style="margin: 5px 0; font-size: 14px;">📏 Distance: ${data.hospital.distance}</p>
+                </div>
+                
+                <!-- Appointment Confirmation -->
+                <div style="background: #e8f5e9; padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #4caf50;">
+                    <h3 style="margin: 0 0 15px 0; color: #2e7d32;">✅ Appointment Confirmed</h3>
+                    <p style="margin: 8px 0; font-size: 15px;"><strong>Reference:</strong> ${data.appointment.reference}</p>
+                    <p style="margin: 8px 0; font-size: 15px;"><strong>Time:</strong> ${data.appointment.time}</p>
+                    <p style="margin: 8px 0; font-size: 15px;"><strong>Status:</strong> <span style="color: #4caf50; font-weight: bold;">${data.appointment.status}</span></p>
+                </div>
+                
+                <!-- Assigned Doctor -->
+                <div class="volunteer-card" style="background: #fff; border: 2px solid #667eea;">
+                    <div class="volunteer-header">
+                        <div class="volunteer-name">👨‍⚕️ ${data.doctor.name}</div>
+                        <span class="volunteer-status" style="background: #4caf50;">${data.doctor.availability}</span>
+                    </div>
+                    <div class="volunteer-details">
+                        <p><strong>Specialty:</strong> ${data.doctor.specialty}</p>
+                        <p><strong>Experience:</strong> ${data.doctor.experience}</p>
+                        <p><strong>Appointment Slot:</strong> ${data.doctor.nextSlot}</p>
+                        <p><strong>Contact:</strong> ${data.doctor.phone}</p>
+                    </div>
+                </div>
+                
+                ${data.alternativeDoctors && data.alternativeDoctors.length > 0 ? `
+                    <div style="margin-top: 20px;">
+                        <h4 style="margin-bottom: 10px; color: #666;">Alternative Specialists Available:</h4>
+                        ${data.alternativeDoctors.map(doc => `
+                            <div class="volunteer-card" style="background: #f5f5f5; margin-bottom: 10px;">
+                                <div class="volunteer-header">
+                                    <div class="volunteer-name">👨‍⚕️ ${doc.name}</div>
+                                    <span class="volunteer-status" style="background: #9e9e9e;">${doc.nextSlot}</span>
+                                </div>
+                                <div class="volunteer-details">
+                                    <p><strong>Specialty:</strong> ${doc.specialty}</p>
+                                    <p><strong>Experience:</strong> ${doc.experience}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                
+                <!-- Instructions -->
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ffc107;">
+                    <strong style="color: #856404;">📋 Instructions:</strong>
+                    <p style="margin: 10px 0 0 0; color: #856404; font-size: 14px;">${data.appointment.instructions}</p>
+                </div>
+            `;
+            
+            modal.classList.add('visible');
+        }
+
+        function closeHospitalModal() {
+            const modal = document.getElementById('hospitalModal');
+            modal.classList.remove('visible');
+        }
+
+        // Close hospital modal when clicking outside
+        document.getElementById('hospitalModal').addEventListener('click', (e) => {
+            if (e.target.id === 'hospitalModal') {
+                closeHospitalModal();
+            }
+        });
 
         async function arrangeTransport() {
             try {
@@ -917,6 +1068,7 @@
             // Reset everything
             sessionId = null;
             conversationHistory = [];
+            window.currentTriageResult = null; // Clear stored triage result
             conversationThread.innerHTML = '';
             transcriptBox.classList.remove('visible');
             triageResult.classList.remove('visible');
